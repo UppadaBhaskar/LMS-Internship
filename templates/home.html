@@ -12,8 +12,9 @@
     {% if session.get("user_id")   %}
     <a href="{{url_for("account")}}">Account</a>
     {% if session.get('role')=='teacher'%}
-    <a href="{{url_for("teacher")}}">Teacher</a>
+        <a href="{{url_for("teacher")}}">Teacher</a>
     {%endif%}
+
 
     {% endif%}
 
@@ -25,8 +26,9 @@
 
     {%endif%}
     <br>
-
+    {% if session.get("user_id")%}
     <a href="{{url_for("logout")}}">Logout</a>
+    {%endif%}
     <br>
 
 </body>

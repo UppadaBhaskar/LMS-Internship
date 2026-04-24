@@ -1,5 +1,5 @@
 from functools import wraps
-from flask import Flask, render_template,request,url_for,flash,redirect,session
+from flask import Flask, render_template,request,url_for,flash,redirect,session,abort
 from models import User
 from config import Config
 from extensions import db
@@ -14,6 +14,14 @@ with app.app_context():
 @app.route("/home")
 def home():
     return render_template("home.html")
+
+@app.after_request
+def _no_cache(response):
+    response.headers["Cache-Control"]="no-store,no-cache,must-revalidate,private"
+    response.headers["Pragma"]="no-cache"
+    response.headers["Expires"]="0"
+    return response
+
 
 
 @app.route("/register",methods=["GET","POST"])
@@ -108,17 +116,40 @@ def login_required(view):
             return view(*args,**kwargs)
     return wrapped
 
-        
+
+def role_required(role):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args,**kwargs):
+            if not session.get("user_id"):
+                flash("Please log in to access the page.","error")
+                return redirect(url_for("login"))
+            if session.get("role")!=role:
+                abort(403)
+            return view(*args,**kwargs)
+        return wrapped
+    return decorator
+
+# Dependency injection
+@app.route("/teacher")
+@login_required
+@role_required("teacher")
+def teacher():
+    return render_template("teacher.html")
+
+
+
+@app.errorhandler(403)
+def forbidden(_e):
+    return render_template("403_error.html"), 403
+
+
 @app.route("/account")
 @login_required
 def account():
     return render_template("account.html")
 
 
-@app.route("/teacher")
-@login_required
-def teacher():
-    return render_template("teacher.html")
 
 if __name__ == "__main__":
     app.run(debug=True)

@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Course list page</title>
+</head>
+<body>
+    <h1>Course list</h1>
+    {%for category,msg in get_flashed_messages(with_categories=true)%}
+    <p class="flash flash-{{category}}">{{msg}}</p>
+    {%endfor%}
+    {% if session.get("role")=="teacher"%}
+    <a href="{{url_for("course_new")}}">New Course</a>
+
+    {%endif%}
+    {% if not courses %}
+    <p>No courses yet.</p>
+ 
+    {%else%}
+    <ul>
+        {% for c in courses%}
+        <li>
+            <p>{{c.title}}</p>-{{c.teacher.username}}
+        </li>
+        {%endfor%}
+
+    </ul>
+    {%endif%}
+
+
+
+    
+</body>
+</html>

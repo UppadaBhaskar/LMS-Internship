@@ -1,6 +1,6 @@
 from functools import wraps
 from flask import Flask, render_template,request,url_for,flash,redirect,session,abort
-from models import User
+from models import User,Course
 from config import Config
 from extensions import db
 
@@ -10,6 +10,36 @@ db.init_app(app)
 
 with app.app_context():
     db.create_all()
+
+def login_required(view):
+    @wraps(view)
+    def wrapped(*args,**kwargs):
+            if not session.get("user_id"):
+                flash("Please log in to access the page.","error")
+                return redirect(url_for("home"))
+            return view(*args,**kwargs)
+    return wrapped
+
+def role_required(role):
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args,**kwargs):
+            if not session.get("user_id"):
+                flash("Please log in to access the page.","error")
+                return redirect(url_for("login"))
+            if session.get("role")!=role:
+                abort(403)
+            return view(*args,**kwargs)
+        return wrapped
+    return decorator
+
+
+
+@app.errorhandler(403)
+def forbidden(_e):
+    return render_template("403_error.html"), 403
+
+
 
 @app.route("/home")
 def home():
@@ -107,29 +137,6 @@ def logout():
     return redirect(url_for("home"))
 
 
-def login_required(view):
-    @wraps(view)
-    def wrapped(*args,**kwargs):
-            if not session.get("user_id"):
-                flash("Please log in to access the page.","error")
-                return redirect(url_for("home"))
-            return view(*args,**kwargs)
-    return wrapped
-
-
-def role_required(role):
-    def decorator(view):
-        @wraps(view)
-        def wrapped(*args,**kwargs):
-            if not session.get("user_id"):
-                flash("Please log in to access the page.","error")
-                return redirect(url_for("login"))
-            if session.get("role")!=role:
-                abort(403)
-            return view(*args,**kwargs)
-        return wrapped
-    return decorator
-
 # Dependency injection
 @app.route("/teacher")
 @login_required
@@ -137,18 +144,51 @@ def role_required(role):
 def teacher():
     return render_template("teacher.html")
 
-
-
-@app.errorhandler(403)
-def forbidden(_e):
-    return render_template("403_error.html"), 403
-
-
 @app.route("/account")
 @login_required
 def account():
     return render_template("account.html")
 
+@app.route("/course_new")
+@login_required
+def Course_form():
+    return render_template("course_form.html")
+
+@app.route("/Courses")
+@login_required
+def course_list():
+    course=Course.query.order_by(Course.created_at.desc()).all()
+    return render_template("course_list.html",courses=course)
+
+
+
+@app.route("/course/new", methods=["GET","POST"])
+@login_required
+@role_required("teacher")
+def course_new():
+    if request.method=="POST":
+        title=(request.form.get("title")).strip()
+        description=(request.form.get("description")).strip()
+
+        if not title:
+            flash("Title is required","error")
+            return render_template("course_form.html")
+        try:
+            course=Course(
+                title=title,
+                description=description,
+                teacher_id=session["user_id"],
+
+            )
+            db.session.add(course)
+            db.session.commit()
+            flash("Course is successfully created","success")
+            return redirect(url_for("account"))
+        except Exception:
+            db.rollback()
+            flash("failed saving data","error")
+            return render_template("course_form.html")
+    return render_template("course_form.html")
 
 
 if __name__ == "__main__":

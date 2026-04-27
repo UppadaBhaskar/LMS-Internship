@@ -10,13 +10,25 @@
     {%endfor%}
 
     {% if session.get("user_id")   %}
+
+    <p>Signed in as {{session.get("username")}} - {{session.get("role")}}</p>
+    
+    <a href={{url_for("course_list")}}>courses</a>
+    
+
+
     <a href="{{url_for("account")}}">Account</a>
     {% if session.get('role')=='teacher'%}
         <a href="{{url_for("teacher")}}">Teacher</a>
+
+            <br>
+            <a href="{{url_for("logout")}}">Logout</a>
+    {%endif%}
+
     {%endif%}
 
 
-    {% endif%}
+  
 
 
     {% if not session.get("user_id") %}
@@ -26,9 +38,9 @@
 
     {%endif%}
     <br>
-    {% if session.get("user_id")%}
-    <a href="{{url_for("logout")}}">Logout</a>
-    {%endif%}
+
+
+
     <br>
 
 </body>
